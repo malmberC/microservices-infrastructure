@@ -2,7 +2,7 @@
 
 [[ -n "$1" ]] && host=$1 || host=$HOSTNAME
 
-MAX_SECONDS=60
+MAX_SECONDS=600
 while /bin/true
 do
     [[ "$(echo ruok | nc "$host" 2181 2>/dev/null)" == "imok" ]] && exit 0 || sleep 1
