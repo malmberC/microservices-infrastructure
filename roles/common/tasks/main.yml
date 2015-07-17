@@ -13,21 +13,33 @@
   sudo: yes
   lineinfile:
     dest: /etc/hosts
-    regexp: "^{{ hostvars[item].ansible_default_ipv4.address }} {{ item }}{% if use_host_domain %} {{ item }}.{{ host_domain }}{% endif %}$"
     line: "{{ hostvars[item].ansible_default_ipv4.address }} {{ item }}{% if use_host_domain %} {{ item }}.{{ host_domain}}{% endif %}"
     state: present
-  when: hostvars[item].ansible_default_ipv4.address is defined
+  when: hostvars[item].ansible_default_ipv4.address is defined and item != 'localhost'
   with_items: groups['all']
 
+# add default IPv4 address to hostname (if not already there)
+- name: add default ipv4 to hosts
+  sudo: yes
+  lineinfile:
+    dest: /etc/hosts
+    regexp: "^{{ ansible_default_ipv4.address }} {{ ansible_hostname }}{% if use_host_domain %} {{ ansible_fqdn }}{% endif %}$"
+    line: "{{ ansible_default_ipv4.address }} {{ ansible_hostname }}{% if use_host_domain %} {{ ansible_fqdn }}{% endif %}"
+    state: present
+
+# remove loopback addresses pointing at hostname
 - name: clean hosts file
   sudo: yes
   lineinfile:
     dest: /etc/hosts
     regexp: "{{ item }}"
     state: absent
+  when: inventory_hostname != 'localhost'
   with_items:
     - '^127\.0\.0\.1(\s+){{ inventory_hostname }}.*'
     - '^::1(\s+){{ inventory_hostname }}.*'
+    - '^127\.0\.0\.1(\s+){{ ansible_hostname }}.*'
+    - '^::1(\s+){{ ansible_hostname }}.*'
 
 - name: install system utilities
   sudo: yes
